@@ -1,0 +1,20 @@
+[project]
+name = "info-segugio"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Domenico Mirabelli",email = "domenicomirabelli@outlook.it"}
+]
+readme = "README.md"
+requires-python = "<3.14.0,>=3.10"
+dependencies = [
+    "chainlit (>=2.12.0,<3.0.0)",
+    "openai (>=3.35.1,<4.0.0)"
+]
+
+[tool.poetry]
+packages = [{include = "info_segugio", from = "src"}]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

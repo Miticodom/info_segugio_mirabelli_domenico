@@ -1,0 +1,7 @@
+.bg-accent[class*="max-w-[70%]"] {
+    background-color: #c2410c !important;
+}
+
+.bg-accent[class*="max-w-[70%]"], .bg-accent[class*="max-w-[70%]"] * {
+    color: white !important;
+}
