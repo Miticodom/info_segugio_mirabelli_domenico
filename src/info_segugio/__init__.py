@@ -45,7 +45,12 @@ def optimize_search_query(research_topic):
     obj = json.loads(result)
     return obj
 
-
+def _format_content(result):
+    return f"""
+Fonte {result['title']}:\n===\n
+URL: {result['url']}\n===\n
+Contenuto piu' rilevante: {result['content']}\n===\n
+"""
 # Esegue la ricerca web con Tavily
 def web_research(search_query):
     max_results = 5
@@ -59,8 +64,9 @@ def web_research(search_query):
     )
     results = response.get("results", [])
     titles = [result["title"] for result in results]
+    contents = [_format_content(result) for result in results]
     print(titles)
-    return {"sources_gathered": [result["url"] for result in results]}
+    return {"sources_gathered": [result["url"] for result in results], "contents": contents}
 
 
 @cl.on_message
