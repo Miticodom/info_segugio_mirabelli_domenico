@@ -2,6 +2,7 @@ import json
 
 import chainlit as cl
 from openai import OpenAI
+from tavily import TavilyClient
 from config import Config
 
 
@@ -43,6 +44,21 @@ def optimize_search_query(research_topic):
     return obj
 
 
+# Esegue la ricerca web con Tavily
+def web_research(search_query):
+    max_results = 1
+    include_raw = False
+
+    tavily_client = TavilyClient(api_key=Config.TAVILY_API_KEY)
+    response = tavily_client.search(
+        query=search_query,
+        max_results=max_results,
+        include_raw_content=include_raw,
+    )
+    print(response)  # per vedere nel terminale com'è fatta la risposta
+    return {"sources_gathered": [r["url"] for r in response["results"]]}
+
+
 @cl.on_message
 async def main(message: cl.Message):
     # Fase 1: Generazione della query iniziale
@@ -55,4 +71,14 @@ async def main(message: cl.Message):
         author="system_assistant",
         content=f"Query di ricerca ottimizzata:\n {query}.\n Mi sono soffermato su questo aspetto:\n {aspect}.\n Per questo motivo:\n {reason}.\n",
     ).send()
-    
+
+    # Esegui la ricerca web
+    results = web_research(query)
+
+    # feedback per l'utente
+    sources = results["sources_gathered"]
+    first_source = sources[0] if sources else "nessuna fonte trovata"
+    await cl.Message(
+        author="system_assistant",
+        content=f"Fonti trovate: {first_source}",
+    ).send()

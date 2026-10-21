@@ -7,3 +7,6 @@ class Config:
     LLM_MODEL_LOW = "openai/gpt-oss-120b"
     AI_API_URL = "https://api.groq.com/openai/v1"
     AI_API_KEY = os.environ["GROQ_API_KEY"]
+
+    # Ricerca web con Tavily
+    TAVILY_API_KEY = os.environ["TAVILY_API_KEY"]
