@@ -46,7 +46,7 @@ def optimize_search_query(research_topic):
 
 # Esegue la ricerca web con Tavily
 def web_research(search_query):
-    max_results = 1
+    max_results = 5
     include_raw = False
 
     tavily_client = TavilyClient(api_key=Config.TAVILY_API_KEY)
@@ -55,8 +55,10 @@ def web_research(search_query):
         max_results=max_results,
         include_raw_content=include_raw,
     )
-    print(response)  # per vedere nel terminale com'è fatta la risposta
-    return {"sources_gathered": [r["url"] for r in response["results"]]}
+    results = response.get("results", [])
+    titles = [result["title"] for result in results]
+    print(titles)
+    return {"sources_gathered": [result["url"] for result in results]}
 
 
 @cl.on_message
