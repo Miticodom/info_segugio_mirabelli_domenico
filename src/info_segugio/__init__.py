@@ -52,6 +52,7 @@ URL: {result['url']}\n===\n
 Contenuto piu' rilevante: {result['content']}\n===\n
 """
 # Esegue la ricerca web con Tavily
+# Esegue la ricerca web con Tavily
 def web_research(search_query):
     max_results = 5
     include_raw = False
@@ -66,7 +67,10 @@ def web_research(search_query):
     titles = [result["title"] for result in results]
     contents = [_format_content(result) for result in results]
     print(titles)
-    return {"sources_gathered": [result["url"] for result in results], "contents": contents}
+    return {
+        "sources_gathered": titles,
+        "web_research_results": contents,
+    }
 
 
 @cl.on_message
