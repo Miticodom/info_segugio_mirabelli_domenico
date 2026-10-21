@@ -25,15 +25,18 @@ Rispondi SOLO con un oggetto JSON in questo formato:
 
 # Funzione per interagire con l'AI
 def llm(developer_prompt, user_prompt, temperature=0, response_format={"type": "json_object"}):
-    response = client.chat.completions.create(
-        model=Config.LLM_MODEL_LOW,
-        messages=[
+    params = {
+        "model": Config.LLM_MODEL_LOW,
+        "messages": [
             {"role": "system", "content": developer_prompt},
             {"role": "user", "content": user_prompt},
         ],
-        temperature=temperature,
-        response_format=response_format,
-    )
+        "temperature": temperature,
+    }
+    # Il formato (per esempio JSON) si aggiunge solo se richiesto
+    if response_format is not None:
+        params["response_format"] = response_format
+    response = client.chat.completions.create(**params)
     return response.choices[0].message.content
 
 
@@ -95,4 +98,18 @@ async def main(message: cl.Message):
     await cl.Message(
         author="system_assistant",
         content=f"Fonti trovate: {first_source}",
+    ).send()
+
+    # Crea il riassunto dei risultati
+    summary = llm(
+        "sei un assistente molto in gamba e sai riassumere molto bene le informazioni.",
+        f"Ecco le informazioni che devi riassumere: {results['web_research_results']}",
+        temperature=0.2,
+        response_format=None,
+    )
+
+    # feedback per l'utente
+    await cl.Message(
+        author="system_assistant",
+        content=f"Riassunto attuale: {summary}",
     ).send()
