@@ -1,5 +1,5 @@
 import json
-
+from datetime import date
 import chainlit as cl
 from openai import OpenAI
 from tavily import TavilyClient
@@ -13,6 +13,7 @@ client = OpenAI(base_url=Config.AI_API_URL, api_key=Config.AI_API_KEY)
 # Istruzioni (prompt) per generare la query di ricerca (scritte da me, non dal docente)
 query_writer_instructions = """Sei un esperto nel creare query ottimizzate per i motori di ricerca.
 L'argomento da ricercare è: {research_topic}
+Oggi è il {today}. Non inserire anni nella query a meno che l'utente non li chieda.
 
 Rispondi SOLO con un oggetto JSON in questo formato:
 {{
@@ -38,7 +39,8 @@ def llm(developer_prompt, user_prompt, temperature=0, response_format={"type": "
 
 # Genera una query ottimizzata per la ricerca web
 def optimize_search_query(research_topic):
-    formatted_instructions = query_writer_instructions.format(research_topic=research_topic)
+    today = date.today().strftime("%Y-%m-%d")
+    formatted_instructions = query_writer_instructions.format(research_topic=research_topic, today=today)
     result = llm(formatted_instructions, "Genera una query per la ricerca web:")
     obj = json.loads(result)
     return obj
