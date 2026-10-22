@@ -104,39 +104,52 @@ async def main(message: cl.Message):
         author="system_assistant",
         content=f"Query di ricerca ottimizzata:\n {query}.\n Mi sono soffermato su questo aspetto:\n {aspect}.\n Per questo motivo:\n {reason}.\n",
     ).send()
-
+    
+    #Fase 2: Ciclo di ricerca e approfondimento
     running_summary = None # Inizializza il riassunto corrente come None
+    max_cycles = 4 # Numero massimo di cicli di ricerca e sintesi
 
+    while True: 
+        # Esegui la ricerca web
+        results = web_research(query)
 
-    # Esegui la ricerca web
-    results = web_research(query)
-
-    # feedback per l'utente
-    sources = results["sources_gathered"]
-    first_source = sources[0] if sources else "nessuna fonte trovata"
-    await cl.Message(
+        # feedback per l'utente
+        sources = results["sources_gathered"]
+        first_source = sources[0] if sources else "nessuna fonte trovata"
+        await cl.Message(
         author="system_assistant",
         content=f"Fonti trovate: {first_source}",
-    ).send()
+        ).send()
 
          # Genera o aggiorna il riassunto
-    web_research_results = [results["web_research_results"]]  # una lista: un elemento per ogni ricerca
-    summary = summarize_sources(web_research_results, query, running_summary)
+        web_research_results = [results["web_research_results"]]  
+         # una lista: un elemento per ogni ricerca
+        summary = summarize_sources(web_research_results, query, running_summary)
+        running_summary = summary  # Aggiorna il riassunto corrente
 
-    # feedback per l'utente
-    await cl.Message(
+        # feedback per l'utente
+        await cl.Message(
         author="system_assistant",
         content=f"Riassunto attuale: {summary}",
-    ).send()
-
+        ).send()
+        # se abbiamo finito i cicli Esci
+        max_cycles -= 1
+        if max_cycles <= 0:
+            break
     
-    # Genera la prossima query di approfondimento
-    ros = reflect_on_summary(query, summary)
-    query = ros.get("domanda_approfondimento", f"Dimmi di più su {query}")
-    lacuna_conoscenza = ros.get("lacuna_conoscenza", "")
+        # Genera la prossima query di approfondimento
+        ros = reflect_on_summary(query, summary)
+        query = ros.get("domanda_approfondimento", f"Dimmi di più su {query}")
+        lacuna_conoscenza = ros.get("lacuna_conoscenza", "")
 
-    # feedback per l'utente
-    await cl.Message(
+        # feedback per l'utente
+        await cl.Message(
         author="system_assistant",
         content=f"Prossima ricerca:\n {query}.\n Mi sono soffermato su questo perché:\n {lacuna_conoscenza}",
-    ).send()
+        ).send()
+
+    # Fase 3: Invio del risultato finale
+    await cl.Message(
+    author="segugio_assistant",
+    content=f"Risposta alla tua domanda:\n\n{message.content}\n\nRisposta finale:\n\n {running_summary}"
+).send()
