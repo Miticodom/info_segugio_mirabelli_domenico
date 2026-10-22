@@ -4,24 +4,11 @@ import chainlit as cl
 from openai import OpenAI
 from tavily import TavilyClient
 from config import Config
+from prompts import query_writer_instructions, summarizer_instructions
 
 
 # Inizializzazione del client OpenAI con le configurazioni
 client = OpenAI(base_url=Config.AI_API_URL, api_key=Config.AI_API_KEY)
-
-
-# Istruzioni (prompt) per generare la query di ricerca (scritte da me, non dal docente)
-query_writer_instructions = """Sei un esperto nel creare query ottimizzate per i motori di ricerca.
-L'argomento da ricercare è: {research_topic}
-Oggi è il {today}. Se l'utente indica un periodo, una data o un nome preciso, mantienili nella query. Altrimenti non inserire anni inventati.
-
-Rispondi SOLO con un oggetto JSON in questo formato:
-{{
-    "query": "la query di ricerca ottimizzata",
-    "aspect": "l'aspetto dell'argomento su cui ti sei concentrato",
-    "reason": "il motivo per cui hai scelto questa query"
-}}"""
-
 
 # Funzione per interagire con l'AI
 def llm(developer_prompt, user_prompt, temperature=0, response_format={"type": "json_object"}):
@@ -76,9 +63,6 @@ def web_research(search_query):
         "sources_gathered": titles,
         "web_research_results": contents,
     }
-# Istruzioni per il riassunto (scritte da me, non dal docente)
-summarizer_instructions = "Sei un assistente molto in gamba e sai riassumere molto bene le informazioni. Rispondi in italiano con un testo chiaro."
-
 
 # Sintetizza i risultati della ricerca in un riassunto coerente
 def summarize_sources(web_research_results, research_topic, running_summary=None):
