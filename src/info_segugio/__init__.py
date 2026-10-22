@@ -5,6 +5,7 @@ from openai import OpenAI
 from tavily import TavilyClient
 from config import Config
 from prompts import query_writer_instructions, summarizer_instructions
+from prompts import query_writer_instructions, summarizer_instructions, reflection_instructions
 
 
 # Inizializzazione del client OpenAI con le configurazioni
@@ -83,6 +84,14 @@ def summarize_sources(web_research_results, research_topic, running_summary=None
     output_formatter = None  # Vogliamo del testo semplice
     return llm(summarizer_instructions, message, 0.2, output_formatter)
 
+ # Analizza il riassunto corrente e genera una domanda di approfondimento
+def reflect_on_summary(research_topic, running_summary):
+    result = llm(
+        reflection_instructions.format(research_topic=research_topic),
+        f"Identifica una lacuna e genera una domanda per la prossima ricerca basandoti su: {running_summary}",
+    )
+    return json.loads(result)
+
 @cl.on_message
 async def main(message: cl.Message):
     # Fase 1: Generazione della query iniziale
@@ -110,12 +119,24 @@ async def main(message: cl.Message):
         content=f"Fonti trovate: {first_source}",
     ).send()
 
-     # Genera o aggiorna il riassunto
+         # Genera o aggiorna il riassunto
     web_research_results = [results["web_research_results"]]  # una lista: un elemento per ogni ricerca
-    summary = summarize_sources(web_research_results, user_message, running_summary)
+    summary = summarize_sources(web_research_results, query, running_summary)
 
     # feedback per l'utente
     await cl.Message(
         author="system_assistant",
         content=f"Riassunto attuale: {summary}",
+    ).send()
+
+    
+    # Genera la prossima query di approfondimento
+    ros = reflect_on_summary(query, summary)
+    query = ros.get("domanda_approfondimento", f"Dimmi di più su {query}")
+    lacuna_conoscenza = ros.get("lacuna_conoscenza", "")
+
+    # feedback per l'utente
+    await cl.Message(
+        author="system_assistant",
+        content=f"Prossima ricerca:\n {query}.\n Mi sono soffermato su questo perché:\n {lacuna_conoscenza}",
     ).send()
