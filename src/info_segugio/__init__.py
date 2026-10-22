@@ -13,7 +13,7 @@ client = OpenAI(base_url=Config.AI_API_URL, api_key=Config.AI_API_KEY)
 # Istruzioni (prompt) per generare la query di ricerca (scritte da me, non dal docente)
 query_writer_instructions = """Sei un esperto nel creare query ottimizzate per i motori di ricerca.
 L'argomento da ricercare è: {research_topic}
-Oggi è il {today}. Non inserire anni nella query a meno che l'utente non li chieda.
+Oggi è il {today}. Se l'utente indica un periodo, una data o un nome preciso, mantienili nella query. Altrimenti non inserire anni inventati.
 
 Rispondi SOLO con un oggetto JSON in questo formato:
 {{
@@ -37,7 +37,7 @@ def llm(developer_prompt, user_prompt, temperature=0, response_format={"type": "
     if response_format is not None:
         params["response_format"] = response_format
     response = client.chat.completions.create(**params)
-    return response.choices[0].message.content
+    return response.choices[0].message.content 
 
 
 # Genera una query ottimizzata per la ricerca web
@@ -54,8 +54,10 @@ Fonte {result['title']}:\n===\n
 URL: {result['url']}\n===\n
 Contenuto piu' rilevante: {result['content']}\n===\n
 """
-# Esegue la ricerca web con Tavily
-# Esegue la ricerca web con Tavily
+
+
+
+# Esegue la ricerca web con Tavily 
 def web_research(search_query):
     max_results = 5
     include_raw = False
@@ -74,7 +76,28 @@ def web_research(search_query):
         "sources_gathered": titles,
         "web_research_results": contents,
     }
+# Istruzioni per il riassunto (scritte da me, non dal docente)
+summarizer_instructions = "Sei un assistente molto in gamba e sai riassumere molto bene le informazioni. Rispondi in italiano con un testo chiaro."
 
+
+# Sintetizza i risultati della ricerca in un riassunto coerente
+def summarize_sources(web_research_results, research_topic, running_summary=None):
+    current_results = web_research_results[-1]
+
+    if running_summary:
+        message = (
+            f"Estendi questo riassunto: {running_summary}\n\n"
+            f"Con questi nuovi risultati: {current_results} "
+            f"Sul tema: {research_topic}"
+        )
+    else:
+        message = (
+            f"Genera un riassunto di questi risultati: {current_results} "
+            f"Sul tema: {research_topic}"
+        )
+
+    output_formatter = None  # Vogliamo del testo semplice
+    return llm(summarizer_instructions, message, 0.2, output_formatter)
 
 @cl.on_message
 async def main(message: cl.Message):
@@ -89,6 +112,9 @@ async def main(message: cl.Message):
         content=f"Query di ricerca ottimizzata:\n {query}.\n Mi sono soffermato su questo aspetto:\n {aspect}.\n Per questo motivo:\n {reason}.\n",
     ).send()
 
+    running_summary = None # Inizializza il riassunto corrente come None
+
+
     # Esegui la ricerca web
     results = web_research(query)
 
@@ -100,13 +126,9 @@ async def main(message: cl.Message):
         content=f"Fonti trovate: {first_source}",
     ).send()
 
-    # Crea il riassunto dei risultati
-    summary = llm(
-        "sei un assistente molto in gamba e sai riassumere molto bene le informazioni.",
-        f"Ecco le informazioni che devi riassumere: {results['web_research_results']}",
-        temperature=0.2,
-        response_format=None,
-    )
+     # Genera o aggiorna il riassunto
+    web_research_results = [results["web_research_results"]]  # una lista: un elemento per ogni ricerca
+    summary = summarize_sources(web_research_results, user_message, running_summary)
 
     # feedback per l'utente
     await cl.Message(
