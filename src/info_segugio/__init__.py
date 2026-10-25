@@ -127,7 +127,7 @@ async def main(message: cl.Message):
 
         # Genera o aggiorna il riassunto
         # results["web_research_results"] è già una lista di testi: la passo così com'è
-        summary = summarize_sources(results["web_research_results"], query, running_summary)
+        summary = summarize_sources(results["web_research_results"], user_message, running_summary)
         running_summary = summary  # Aggiorna il riassunto corrente
 
         # feedback per l'utente
@@ -142,7 +142,7 @@ async def main(message: cl.Message):
             break
 
         # Genera la prossima query di approfondimento
-        ros = reflect_on_summary(query, summary)
+        ros = reflect_on_summary(user_message, summary)
         query = ros.get("domanda_approfondimento", f"Dimmi di più su {query}")
         lacuna_conoscenza = ros.get("lacuna_conoscenza", "")
 

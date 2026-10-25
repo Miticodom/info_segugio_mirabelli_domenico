@@ -20,6 +20,7 @@ Per ESTENDERE un riassunto esistente:
 2. Mantieni uno stile coerente
 3. Crea collegamenti logici tra le informazioni
 4. Evita ripetizioni
+5. Mantieni le informazioni importanti già presenti nel riassunto
 
 Per creare un NUOVO riassunto:
 1. Evidenzia i punti chiave di ogni fonte
@@ -34,7 +35,7 @@ REGOLE IMPORTANTI:
 - Non citare le fonti nel testo
 - Non aggiungere bibliografia
 - Non usare tag o formattazioni speciali
-- Usa SOLO informazioni presenti nei risultati forniti. Se un dato non c'è, non inventarlo e non completarlo
+-  Usa solo informazioni presenti nel riassunto esistente e nei nuovi risultati forniti. Se un dato non c'è, non inventarlo
 """
 
 
