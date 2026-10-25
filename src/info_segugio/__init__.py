@@ -1,15 +1,16 @@
 import json
 from datetime import date
+
 import chainlit as cl
 from openai import OpenAI
 from tavily import TavilyClient
 from config import Config
-from prompts import query_writer_instructions, summarizer_instructions
 from prompts import query_writer_instructions, summarizer_instructions, reflection_instructions
 
 
 # Inizializzazione del client OpenAI con le configurazioni
 client = OpenAI(base_url=Config.AI_API_URL, api_key=Config.AI_API_KEY)
+
 
 # Funzione per interagire con l'AI
 def llm(developer_prompt, user_prompt, temperature=0, response_format={"type": "json_object"}):
@@ -25,7 +26,7 @@ def llm(developer_prompt, user_prompt, temperature=0, response_format={"type": "
     if response_format is not None:
         params["response_format"] = response_format
     response = client.chat.completions.create(**params)
-    return response.choices[0].message.content 
+    return response.choices[0].message.content
 
 
 # Genera una query ottimizzata per la ricerca web
@@ -36,6 +37,7 @@ def optimize_search_query(research_topic):
     obj = json.loads(result)
     return obj
 
+
 def _format_content(result):
     return f"""
 Fonte {result['title']}:\n===\n
@@ -44,8 +46,7 @@ Contenuto piu' rilevante: {result['content']}\n===\n
 """
 
 
-
-# Esegue la ricerca web con Tavily 
+# Esegue la ricerca web con Tavily
 def web_research(search_query):
     max_results = 3
     include_raw = False
@@ -65,10 +66,10 @@ def web_research(search_query):
         "web_research_results": contents,
     }
 
+
 # Sintetizza i risultati della ricerca in un riassunto coerente
 def summarize_sources(web_research_results, research_topic, running_summary=None):
-   
-   # current_results = web_research_results[-1]  # prende l'ultimo risultato
+    # web_research_results è una lista di testi (uno per fonte): li unisco in un solo testo
     current_results = "\n\n".join(web_research_results)
 
     if running_summary:
@@ -86,13 +87,15 @@ def summarize_sources(web_research_results, research_topic, running_summary=None
     output_formatter = None  # Vogliamo del testo semplice
     return llm(summarizer_instructions, message, 0.1, output_formatter)
 
- # Analizza il riassunto corrente e genera una domanda di approfondimento
+
+# Analizza il riassunto corrente e genera una domanda di approfondimento
 def reflect_on_summary(research_topic, running_summary):
     result = llm(
         reflection_instructions.format(research_topic=research_topic),
         f"Identifica una lacuna e genera una domanda per la prossima ricerca basandoti su: {running_summary}",
     )
     return json.loads(result)
+
 
 @cl.on_message
 async def main(message: cl.Message):
@@ -107,41 +110,37 @@ async def main(message: cl.Message):
         content=f"Query di ricerca ottimizzata:\n {query}.\n Mi sono soffermato su questo aspetto:\n {aspect}.\n Per questo motivo:\n {reason}.\n",
     ).send()
 
-    #Fase 2: Ciclo di ricerca e approfondimento
-    running_summary = None # Inizializza il riassunto corrente come None
-    max_cycles = 3 # Numero massimo di cicli di ricerca e sintesi
+    # Fase 2: Ciclo di ricerca e approfondimento
+    running_summary = None  # Inizializza il riassunto corrente come None
+    max_cycles = 3  # Numero massimo di cicli di ricerca e sintesi
 
-    while True: 
+    while True:
         # Esegui la ricerca web
         results = web_research(query)
 
-        # titles = results["sources_gathered"][0] 
-        titles = "\n".join(results["sources_gathered"])
-
         # feedback per l'utente
-        sources = results["sources_gathered"]
-        first_source = sources[0] if sources else "nessuna fonte trovata"
+        titles = "\n".join(results["sources_gathered"])
         await cl.Message(
-        author="system_assistant",
-        content=f"Fonti trovate: {titles}",
+            author="system_assistant",
+            content=f"Fonti trovate: {titles}",
         ).send()
 
-         # Genera o aggiorna il riassunto
-        web_research_results = [results["web_research_results"]]  
-         # una lista: un elemento per ogni ricerca
-        summary = summarize_sources(web_research_results, query, running_summary)
+        # Genera o aggiorna il riassunto
+        # results["web_research_results"] è già una lista di testi: la passo così com'è
+        summary = summarize_sources(results["web_research_results"], query, running_summary)
         running_summary = summary  # Aggiorna il riassunto corrente
 
         # feedback per l'utente
         await cl.Message(
-        author="system_assistant",
-        content=f"Riassunto attuale: {summary}",
+            author="system_assistant",
+            content=f"Riassunto attuale: {summary}",
         ).send()
-        # se abbiamo finito i cicli Esci
+
+        # Se abbiamo finito i cicli, esci
         max_cycles -= 1
         if max_cycles <= 0:
             break
-    
+
         # Genera la prossima query di approfondimento
         ros = reflect_on_summary(query, summary)
         query = ros.get("domanda_approfondimento", f"Dimmi di più su {query}")
@@ -149,12 +148,12 @@ async def main(message: cl.Message):
 
         # feedback per l'utente
         await cl.Message(
-        author="system_assistant",
-        content=f"Prossima ricerca:\n {query}.\n Mi sono soffermato su questo perché:\n {lacuna_conoscenza}",
+            author="system_assistant",
+            content=f"Prossima ricerca:\n {query}.\n Mi sono soffermato su questo perché:\n {lacuna_conoscenza}",
         ).send()
 
     # Fase 3: Invio del risultato finale
     await cl.Message(
-    author="segugio_assistant",
-    content=f"Risposta alla tua domanda:\n\n{message.content}\n\nRisposta finale:\n\n {running_summary}"
-).send()
+        author="segugio_assistant",
+        content=f"Risposta alla tua domanda:\n\n{message.content}\n\nRisposta finale:\n\n {running_summary}",
+    ).send()
