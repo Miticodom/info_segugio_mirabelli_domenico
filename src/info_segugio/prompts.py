@@ -34,6 +34,7 @@ REGOLE IMPORTANTI:
 - Non citare le fonti nel testo
 - Non aggiungere bibliografia
 - Non usare tag o formattazioni speciali
+- Usa SOLO informazioni presenti nei risultati forniti. Se un dato non c'è, non inventarlo e non completarlo
 """
 
 
@@ -46,6 +47,7 @@ I tuoi compiti sono:
 3. Concentrarti su dettagli tecnici o tendenze non coperte
 
 La domanda deve essere autonoma e contenere tutto il contesto necessario.
+La domanda deve essere breve (massimo 25 parole) e concentrarsi su un solo aspetto.
 
 Rispondi con un oggetto JSON:
 {{
